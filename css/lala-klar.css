@@ -1,0 +1,193 @@
+/* La Lasagna — Klar ordering + booking surface, dressed in the site's own palette.
+   Scoped to .lala-klar-* and .klar-embed; additive only, nothing else is touched.
+
+   Palette is read from the site's own theme variables (css/site-*.css):
+     "white"       hsl(66.43,82.35%,93.33%)  cream   — body text
+     "lightAccent" hsl(14,6%,15%)            charcoal— page ground
+     "black"       hsl(357.88,78.57%,50.59%) red     — Italian accent
+     #009246                                 green   — Italian accent
+   Fonts are inherited from the page (Sansita headings, Nunito Sans body). */
+
+:root {
+  --lala-cream: hsl(66.43, 82.35%, 93.33%);
+  --lala-dark: hsl(14, 6%, 15%);
+  --lala-red: hsl(357.88, 78.57%, 50.59%);
+  --lala-green: #009246;
+}
+
+/* ---------------------------------------------------------------- section --- */
+
+/* The site header is a transparent overlay, so the first section has to clear it
+   the same way the authored heroes do. */
+.lala-klar-section {
+  background: var(--lala-dark);
+  color: var(--lala-cream);
+  padding: clamp(150px, 17vw, 240px) 6vw clamp(70px, 10vw, 150px);
+}
+
+.lala-klar-wrap {
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.lala-klar-eyebrow {
+  margin: 0 0 18px;
+  font-size: 0.78rem;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  opacity: 0.62;
+}
+
+.lala-klar-title {
+  margin: 0 0 22px;
+  font-family: var(--heading-font-font-family, "Sansita", Georgia, serif);
+  font-weight: 700;
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  font-size: clamp(3rem, 11vw, 7.5rem);
+}
+
+.lala-klar-title .c-cream { color: var(--lala-cream); }
+.lala-klar-title .c-green { color: var(--lala-green); }
+.lala-klar-title .c-red { color: var(--lala-red); }
+
+.lala-klar-lead {
+  margin: 0 0 10px;
+  max-width: 46em;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.55;
+}
+
+.lala-klar-meta {
+  margin: 0 0 40px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  opacity: 0.66;
+}
+
+.lala-klar-rule {
+  height: 1px;
+  border: 0;
+  margin: 0 0 38px;
+  background: linear-gradient(
+    90deg,
+    var(--lala-red) 0 33%,
+    var(--lala-cream) 33% 66%,
+    var(--lala-green) 66% 100%
+  );
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------- the embed --- */
+
+/* Doubled class on purpose: the embed injects its own <style> into <head> at
+   runtime, i.e. AFTER this file, so a single .klar-embed would lose the tie. */
+.klar-embed.klar-embed {
+  --klar-accent: var(--lala-cream);
+  --klar-on-accent: var(--lala-dark);
+  --klar-line: rgba(251, 249, 224, 0.3);
+  --klar-muted: rgba(251, 249, 224, 0.66);
+  --klar-radius: 2px;
+  font-size: 1rem;
+  /* the date picker and the party <select> draw native chrome — without this
+     the calendar glyph and the dropdown arrow are black on a dark field */
+  color-scheme: dark;
+}
+
+/* Squarespace paints every h1–h6 on the page black; the embed's headings must
+   follow the section they sit in. */
+.klar-embed h2,
+.klar-embed h3,
+.klar-embed h4 {
+  color: inherit !important;
+}
+
+/* Squarespace's form theming paints every input on the page; the embed's own
+   fields must stay in the site's palette rather than inherit that. */
+.klar-embed input,
+.klar-embed textarea,
+.klar-embed select {
+  background: rgba(251, 249, 224, 0.06) !important;
+  color: var(--lala-cream) !important;
+  border: 1px solid rgba(251, 249, 224, 0.3) !important;
+  border-radius: 2px !important;
+  padding: 11px 12px !important;
+  font-family: inherit !important;
+  box-shadow: none !important;
+}
+
+.klar-embed input::placeholder,
+.klar-embed textarea::placeholder {
+  color: rgba(251, 249, 224, 0.45);
+}
+
+.klar-embed input:focus,
+.klar-embed textarea:focus,
+.klar-embed select:focus {
+  outline: 2px solid rgba(251, 249, 224, 0.55);
+  outline-offset: 1px;
+}
+
+.klar-embed .klar-cats button,
+.klar-embed .klar-tabs button,
+.klar-embed .klar-seg button,
+.klar-embed .klar-slots button {
+  letter-spacing: 0.04em;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.klar-embed .klar-cats button:hover,
+.klar-embed .klar-tabs button:hover,
+.klar-embed .klar-seg button:hover,
+.klar-embed .klar-slots button:hover {
+  border-color: var(--lala-cream);
+}
+
+.klar-embed .klar-add,
+.klar-embed .klar-btn {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+  padding: 11px 20px;
+}
+
+.klar-embed .klar-add:hover,
+.klar-embed .klar-btn:hover {
+  background: var(--lala-green);
+  color: var(--lala-cream);
+}
+
+.klar-embed .klar-item {
+  border-bottom-color: rgba(251, 249, 224, 0.18);
+}
+
+.klar-embed .klar-item h4,
+.klar-embed .klar-cart h3,
+.klar-embed h3 {
+  font-family: var(--heading-font-font-family, "Sansita", Georgia, serif);
+  letter-spacing: 0.01em;
+}
+
+.klar-embed .klar-cart {
+  background: rgba(251, 249, 224, 0.05);
+  border-color: rgba(251, 249, 224, 0.28);
+}
+
+.klar-embed .klar-qty button {
+  color: var(--lala-cream);
+  border-color: rgba(251, 249, 224, 0.35);
+}
+
+.klar-embed .klar-ok {
+  color: var(--lala-green);
+}
+
+.klar-embed .klar-err {
+  color: var(--lala-red);
+}
+
+/* The booking surface sits inside the contact page's existing form block, which
+   is already inside a column — let it use the full column width. */
+.lala-klar-book {
+  max-width: 100%;
+}
