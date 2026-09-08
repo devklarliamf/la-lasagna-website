@@ -686,6 +686,45 @@
         });
     }
 
+    /* Online payment. The order API answers a placed order with
+       `payment.checkoutUrl` when — and only when — the restaurant has both
+       switched online payment on and had Stripe accept charges on its account.
+       Until both are true the field is absent and this does nothing, so it is
+       safe to ship long before any restaurant switches over.
+
+       THE ORDER IS ALREADY PLACED WHEN WE GET HERE, by design: the kitchen has
+       it before payment is offered, so a Stripe outage or a guest who closes the
+       tab costs nobody their dinner — it leaves a placed order paid at the
+       counter, exactly as every order works today. Never a gate in front of
+       ordering, and a failure to reach Stripe must never look like a failed
+       order.
+
+       CALLED AFTER showOrderOk, DELIBERATELY — that call clears the basket and
+       shows the confirmation, so by the time the browser leaves there is no live
+       cart behind us and a guest who abandons the payment or presses Back does
+       not find a basket inviting them to order the same food twice.
+
+       THE URL IS CHECKED BEFORE WE NAVIGATE. It arrives from a network response,
+       and sending a guest's browser wherever a response says to go is an open
+       redirect. Stripe-hosted checkout is this feature's only destination, so
+       anything else is dropped and the guest pays in the restaurant. */
+    function stripeCheckoutUrl(payment) {
+      if (!payment || typeof payment.checkoutUrl !== 'string') return '';
+      var url;
+      try { url = new URL(payment.checkoutUrl); } catch (error) { return ''; }
+      if (url.protocol !== 'https:') return '';
+      /* Exact host, or a subdomain of it — never a suffix match on the string,
+         which would accept `checkout.stripe.com.example.net`. */
+      if (url.hostname !== 'stripe.com' && url.hostname.slice(-11) !== '.stripe.com') return '';
+      return url.href;
+    }
+
+    function goToPayment(payment) {
+      var url = stripeCheckoutUrl(payment);
+      if (!url) return;
+      try { window.location.assign(url); } catch (error) { /* the order stands either way */ }
+    }
+
     function showOrderOk(order) {
       var reference = order.orderId ? String(order.orderId).slice(0, 6).toUpperCase() : '';
       el('order-live').hidden = true;
@@ -755,6 +794,9 @@
             return;
           }
           showOrderOk(result.body.order || {});
+          /* Only ever after showOrderOk — see goToPayment. Absent for every
+             order until the restaurant switches online payment on. */
+          goToPayment(result.body.payment);
         })
         .catch(function (error) {
           sending = false;
