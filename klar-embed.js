@@ -78,8 +78,11 @@
       send: 'Lähetä tilaus',
       sending: 'Lähetetään…',
       payAtVenue: 'Maksu ravintolassa. Hinnat lasketaan palvelimella.',
+      payOnline: 'Maksu kortilla: siirryt maksusivulle kun lähetät tilauksen. Hinnat lasketaan palvelimella.',
       orderOk: 'Tilaus lähetetty',
       reference: 'Viite',
+      /* `collect` and `table` name the room on purpose, even at a venue that
+         takes card payments — see the note at their use below. */
       collect: 'Nouto tiskiltä. Maksu ravintolassa.',
       table: 'Tuomme annokset pöytään. Maksu ravintolassa.',
       orderAgain: 'Tilaa lisää',
@@ -148,8 +151,11 @@
       send: 'Send order',
       sending: 'Sending…',
       payAtVenue: 'Pay at the restaurant. Prices are calculated on the server.',
+      payOnline: 'Card payment: you will be taken to the payment page when you send the order. Prices are calculated on the server.',
       orderOk: 'Order sent',
       reference: 'Reference',
+      /* `collect` and `table` name the room on purpose, even at a venue that
+         takes card payments — see the note at their use below. */
       collect: 'Collect at the counter. Pay at the restaurant.',
       table: 'We will bring it to your table. Pay at the restaurant.',
       orderAgain: 'Order more',
@@ -501,6 +507,14 @@
     var categories = [];
     var activeCat = 0;
     var allowsEatIn = true;
+    /* Whether a guest placing an order here will be sent to Stripe. The basket
+       is drawn BEFORE any order exists, so it cannot read this off the order
+       response — GET /menu carries it as `client.onlinePayment`, both halves of
+       it (Stripe's charges_enabled AND the venue's own online_payment_enabled),
+       the same pair POST /order prices against. `=== true` is the point: an
+       older API names no such field, and a payment the payload did not state is
+       one this embed must not announce. */
+    var onlinePayment = false;
     var currency = 'EUR';
     var cart = [];
     var fulfilment = 'eat_in';
@@ -604,7 +618,7 @@
         (orderErr ? '<p class="klar-err">' + esc(orderErr) + '</p>' : '') +
         '<button type="button" class="klar-btn klar-btn-full" data-klar="order-submit"' +
         (sending ? ' disabled' : '') + '>' + esc(sending ? t.sending : t.send) + '</button>' +
-        '<p class="klar-note">' + esc(t.payAtVenue) + '</p>';
+        '<p class="klar-note">' + esc(onlinePayment ? t.payOnline : t.payAtVenue) + '</p>';
     }
 
     /* Any change to what is being ordered starts a new checkout attempt: an
@@ -619,6 +633,7 @@
       });
       allowsEatIn = data.client ? data.client.allowsEatIn !== false : true;
       if (!allowsEatIn) fulfilment = 'takeaway';
+      onlinePayment = !!(data.client && data.client.onlinePayment === true);
       var first = categories[0] && categories[0].items[0];
       if (first && first.currency) currency = first.currency;
       if (categories.length === 0) {
@@ -736,6 +751,17 @@
         (typeof order.totalCents === 'number'
           ? '<div class="klar-big">' + esc(money(order.totalCents, order.currency || currency)) + '</div>'
           : '') +
+        /* These two name the room even where `onlinePayment` is true, and that
+           is deliberate rather than an oversight. This embed keeps no order in
+           storage, so the confirmation exists only during the visit the order
+           was placed in — and when a card page was offered, goToPayment has
+           already taken the browser to Stripe. A guest who is still here to
+           read this is therefore a guest who did NOT reach a card page: the
+           venue takes no online payment, or the redirect was refused or threw.
+           In every one of those cases they pay in the room, so driving this off
+           the venue's switch would promise a card payment to exactly the guest
+           who has no way to make one. The basket note above is the one that
+           follows the switch. */
         '<p class="klar-muted">' + esc(fulfilment === 'takeaway' ? t.collect : t.table) + '</p>' +
         '<button type="button" class="klar-btn" data-klar="order-again" style="margin-top:20px">' +
         esc(t.orderAgain) + '</button>';
