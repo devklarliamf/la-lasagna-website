@@ -94,7 +94,6 @@
   "Perfect for a romantic dinner, or a vibrant gathering with friends, our restaurant blends historic flavors with warm Italian hospitality. Experience the taste of Sicily, right here in Helsinki.": "Ravintolamme sopii erinomaisesti niin romanttiseen illalliseen kuin vilkkaaseen ystävien kokoontumiseenkin, ja siinä yhdistyvät perinteiset makuelämykset ja lämmin italialainen vieraanvaraisuus. Koe Sisilian makumaailma täällä Helsingissä.",
   "Contact us": "Ota yhteyttä",
   "Book a table!": "Varaa pöytä!",
-  "We'll be in touch ASAP!": "Otamme yhteyttä mahdollisimman pian!",
   "Name": "Nimi",
   "For reservations please include: Date, Time and Persons": "Ilmoita varauksessa seuraavat tiedot: päivämäärä, kellonaika ja henkilömäärä",
   "Cancellations and changes in party size must be made at least 4 hours before the reservation time. For no-shows, late cancellations, or changes in party size made after this timeframe, the deposit for the missing guests will be retained.": "Peruutukset ja ryhmäkokoonpanon muutokset on tehtävä vähintään 4 tuntia ennen varausajankohtaa. Jos asiakas ei saavu paikalle, peruutus tehdään liian myöhään tai ryhmäkokoonpanon muutoksia tehdään tämän määräajan jälkeen, puuttuvien vieraiden varausmaksu pidätetään.",
@@ -146,5 +145,6 @@
   "Message": "Viesti",
   "SEND": "LÄHETÄ",
   "Thank you for choosing to book a table at LaLasagna. For parties of more than 12 guests, we kindly ask you to make a booking inquiry by email at": "Kiitos, että päätitte varata pöydän LaLasagnasta. Jos seurueessanne on yli 12 vierasta, pyydämme teitä lähettämään varauskyselyn sähköpostitse osoitteeseen",
-  "For bookings of 8 or more guests, a reservation deposit of 12€ per guest is required to confirm the booking, and we will contact you to arrange it. The deposit will either be deducted from the final bill when the party arrives or refunded after the reservation has been honored.": "Kun seurueessa on vähintään 8 vierasta, varauksen vahvistamiseksi vaaditaan 12 euron varausmaksu vierasta kohden, ja otamme teihin yhteyttä sen järjestämiseksi. Varausmaksu joko vähennetään lopullisesta laskusta seurueen saapuessa tai palautetaan, kun varaus on toteutunut."
+  "For bookings of 8 or more guests, a reservation deposit of 12€ per guest is required to confirm the booking, and we will contact you to arrange it. The deposit will either be deducted from the final bill when the party arrives or refunded after the reservation has been honored.": "Kun seurueessa on vähintään 8 vierasta, varauksen vahvistamiseksi vaaditaan 12 euron varausmaksu vierasta kohden, ja otamme teihin yhteyttä sen järjestämiseksi. Varausmaksu joko vähennetään lopullisesta laskusta seurueen saapuessa tai palautetaan, kun varaus on toteutunut.",
+  "Pick a time and your table is confirmed straight away.": "Valitse aika, niin pöytä vahvistuu heti."
 }
