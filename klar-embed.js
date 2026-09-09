@@ -259,11 +259,24 @@
     '.klar-seg button.klar-on{background:var(--klar-accent);color:var(--klar-on-accent);',
     'border-color:var(--klar-accent)}',
     '.klar-field{margin:12px 0}',
-    /* Two fields to a row. The min() keeps the pair from collapsing on a phone
-       without a media query — the embed can sit in a column narrower than the
-       viewport, so a viewport query would be measuring the wrong box. */
+    /* Two fields to a row, but only where two genuinely fit. The min() keeps the
+       pair from collapsing on a phone without a media query — the embed can sit
+       in a column narrower than the viewport, so a viewport query would be
+       measuring the wrong box. 220px, not 160px: a native date field and a party
+       <select> both draw platform chrome, and on iOS Safari the date box refuses
+       to shrink to a 160px track — it overran the select beside it and pushed
+       the phone/email pair off the right edge. Under 452px of container the pair
+       is a single column and every field is full width. */
     '.klar-pair{display:grid;gap:0 12px;grid-template-columns:',
-    'repeat(auto-fit,minmax(min(100%,160px),1fr))}',
+    'repeat(auto-fit,minmax(min(100%,220px),1fr))}',
+    /* A grid item's min-width defaults to its content's minimum, so a field with
+       chrome wider than its track escapes the track instead of being clipped by
+       it. These two lines are what stop that happening again at any width. */
+    '.klar-pair>.klar-field{min-width:0}',
+    '.klar-field input,.klar-field select,.klar-field textarea{max-width:100%}',
+    /* Safari centres a date value in a box wider than the value; every other
+       field in the form starts at the left edge, so this one does too. */
+    '.klar-field input[type=date]{text-align:left}',
     /* The collapsed row reads as one field label, not a button, so it sits in
        the rhythm of the labels above it rather than competing with Varaa pöytä. */
     '.klar-more{margin:12px 0}',
