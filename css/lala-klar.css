@@ -191,3 +191,49 @@
 .lala-klar-book {
   max-width: 100%;
 }
+
+/* ------------------------------------------------------------ tablet band --- */
+
+/* Squarespace leaves its mobile grid at 768px, so from there up the contact
+   page uses the authored desktop band: 12 of the section's 24 columns. On a
+   1440 screen that is 657px and right. On an iPad in portrait it is 348px —
+   a phone-width form marooned in the middle of a 768px page, one field per
+   row and seven rows of times, because the field pairs need 452px of
+   container before they will sit two to a row.
+
+   Measured at 768: 12 columns = 348px, 20 columns = 587px. So this band, and
+   only this band, widens the section to 20 columns; every block keeps its
+   authored centre and its rows, so the section reflows rather than
+   rearranging. Above 1024 the authored band is already 466px and splits the
+   pairs on its own, which is why the query ends there.
+
+   Scoped to this section's own block ids — no other page is touched. The
+   .fluid-engine prefix is what wins: the page's grid rules live in a <style>
+   inside <body>, i.e. after this file, so a bare class would lose the tie. */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  /* heading, the booking block itself, and the note under it: 8/20 -> 4/24 */
+  .fluid-engine .fe-block-b3766f5ed3c3d3b63412,
+  .fluid-engine .fe-block-cf4174182feb715cfe07,
+  .fluid-engine .fe-block-yui_3_17_2_1_1780063472404_3468 {
+    grid-column: 4 / 24;
+  }
+
+  /* the line under the heading: 10/18 -> 7/21 */
+  .fluid-engine .fe-block-ff836d0dbec64fbc484c {
+    grid-column: 7 / 21;
+  }
+
+  /* the map: 6/22 -> 3/25 */
+  .fluid-engine .fe-block-yui_3_17_2_1_1764702229989_13421 {
+    grid-column: 3 / 25;
+  }
+
+  /* the two address blocks below it: 12/16 -> 11/17, 11/17 -> 9/19 */
+  .fluid-engine .fe-block-916612e5e07cbc8f0eba {
+    grid-column: 11 / 17;
+  }
+
+  .fluid-engine .fe-block-523cda3f8fca79c5cf2b {
+    grid-column: 9 / 19;
+  }
+}
