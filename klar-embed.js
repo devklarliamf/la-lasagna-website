@@ -102,7 +102,15 @@
       bookingOff: 'Pöytävaraus ei ole juuri nyt käytössä.',
       email: 'Sähköposti',
       requests: 'Toiveet',
-      requestsPlaceholder: 'Korkea tuoli, ikkunapöytä, juhlat…',
+      /* No facility is named here. The embed does not know which chairs, tables
+         or rooms a restaurant actually has, and a placeholder naming one reads
+         as an offer — La Lasagna has no high chairs, and the old
+         "Korkea tuoli…" advertised them on their own booking form. */
+      requestsPlaceholder: 'Ikkunapöytä, juhlat…',
+      /* One collapsed line stands in for both optional boxes below it. They stay
+         two separate fields, for the Art 9 reason set out at the markup — but a
+         guest who wants neither now scrolls past one row, not four. */
+      moreLabel: 'Toiveet tai allergiat (vapaaehtoinen)',
       dietary: 'Allergiat tai erityisruokavalio',
       dietaryPlaceholder: 'Esim. pähkinäallergia, keliakia',
       /* MUST match HEALTH_CONSENT_TEXT.fi in
@@ -175,7 +183,8 @@
       bookingOff: 'Table booking is not available right now.',
       email: 'Email',
       requests: 'Requests',
-      requestsPlaceholder: 'High chair, window table, a celebration…',
+      requestsPlaceholder: 'Window table, a celebration…',
+      moreLabel: 'Requests or allergies (optional)',
       dietary: 'Allergies or special diet',
       dietaryPlaceholder: 'E.g. nut allergy, coeliac',
       /* MUST match HEALTH_CONSENT_TEXT.en — see the Finnish note above. */
@@ -250,6 +259,17 @@
     '.klar-seg button.klar-on{background:var(--klar-accent);color:var(--klar-on-accent);',
     'border-color:var(--klar-accent)}',
     '.klar-field{margin:12px 0}',
+    /* Two fields to a row. The min() keeps the pair from collapsing on a phone
+       without a media query — the embed can sit in a column narrower than the
+       viewport, so a viewport query would be measuring the wrong box. */
+    '.klar-pair{display:grid;gap:0 12px;grid-template-columns:',
+    'repeat(auto-fit,minmax(min(100%,160px),1fr))}',
+    /* The collapsed row reads as one field label, not a button, so it sits in
+       the rhythm of the labels above it rather than competing with Varaa pöytä. */
+    '.klar-more{margin:12px 0}',
+    '.klar-more summary{cursor:pointer;font-size:.75rem;text-transform:uppercase;',
+    'letter-spacing:.08em;color:var(--klar-muted);padding:4px 0}',
+    '.klar-more[open] summary{margin-bottom:4px}',
     /* The Art 9 consent row: a normal-case, wrapping paragraph beside a
        checkbox, deliberately unlike the uppercase field labels above — it is
        wording to be read, not a caption to be skimmed. */
@@ -449,31 +469,44 @@
       (cfg.book
         ? '<div class="klar-panel' + (cfg.order ? '' : ' klar-on') + '" data-klar-panel="book">' +
           '<div data-klar="book-live">' +
+          /* Paired one to a row on anything wider than a phone. Six stacked
+             full-width fields is the length the form was pulled up on; the
+             pairs are the two that genuinely belong together — when and how
+             many, then how to reach you. Narrow screens fall back to one
+             column, so nothing is ever squeezed. */
+          '<div class="klar-pair">' +
           '<div class="klar-field"><label>' + esc(t.date) + '</label>' +
           '<input type="date" data-klar="date"></div>' +
           '<div class="klar-field"><label>' + esc(t.party) + '</label>' +
-          '<select data-klar="party"></select></div>' +
+          '<select data-klar="party"></select></div></div>' +
           '<div class="klar-field"><label>' + esc(t.time) + '</label>' +
           '<div class="klar-slots" data-klar="slots"></div></div>' +
           '<div class="klar-field"><label>' + esc(t.name) + '</label>' +
           '<input type="text" autocomplete="name" data-klar="bname"></div>' +
+          '<div class="klar-pair">' +
           '<div class="klar-field"><label>' + esc(t.phone) + '</label>' +
           '<input type="tel" autocomplete="tel" data-klar="bphone"></div>' +
           '<div class="klar-field"><label>' + esc(t.email) + '</label>' +
-          '<input type="email" autocomplete="email" data-klar="bemail"></div>' +
+          '<input type="email" autocomplete="email" data-klar="bemail"></div></div>' +
+          /* Both optional boxes live behind one closed <details>. Native, so it
+             works with no JS and keeps keyboard and screen-reader behaviour for
+             free; the fields stay in the DOM, so every reader below is
+             unchanged whether or not the guest ever opens it. */
+          '<details class="klar-more" data-klar="bmore">' +
+          '<summary>' + esc(t.moreLabel) + '</summary>' +
           '<div class="klar-field"><label>' + esc(t.requests) + '</label>' +
           '<textarea rows="2" data-klar="breq" placeholder="' + esc(t.requestsPlaceholder) + '"></textarea></div>' +
           /* The allergy field and its own consent tick, split from the requests
              box above for GDPR Art 9(2)(a): consent has to be specific to the
-             health data, and a single box cannot tell "no nuts" from "high
-             chair". The tick is hidden until the field has something in it, so
-             a guest asking for a high chair is never asked to consent to
+             health data, and a single box cannot tell "no nuts" from "window
+             table". The tick is hidden until the field has something in it, so
+             a guest asking for a window table is never asked to consent to
              health processing. The server refuses the write without it. */
           '<div class="klar-field"><label>' + esc(t.dietary) + '</label>' +
           '<textarea rows="2" data-klar="bdiet" placeholder="' + esc(t.dietaryPlaceholder) + '"></textarea>' +
           '<label class="klar-consent" data-klar="bdiet-consent-row" hidden>' +
           '<input type="checkbox" data-klar="bdiet-consent">' +
-          '<span>' + esc(t.dietaryConsent) + '</span></label></div>' +
+          '<span>' + esc(t.dietaryConsent) + '</span></label></div></details>' +
           '<p class="klar-err" data-klar="book-err" hidden></p>' +
           '<button type="button" class="klar-btn klar-btn-full" data-klar="book-submit">' +
           esc(t.book) + '</button>' +
@@ -941,6 +974,11 @@
     function showBookErr(message) {
       bookErrEl.textContent = message;
       bookErrEl.hidden = !message;
+      /* An error about something the guest typed in the collapsed section has
+         to be shown next to it. Only opens when that section holds an allergy —
+         a missing name must not fling open two boxes nobody asked for. */
+      var more = el('bmore');
+      if (message && more && el('bdiet').value.trim()) more.open = true;
     }
 
     function loadSlots() {
