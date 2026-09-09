@@ -1041,7 +1041,18 @@
       if (message && more && el('bdiet').value.trim()) more.open = true;
     }
 
-    function loadSlots() {
+    /* How far the opening load will walk forward looking for a day that can
+       actually be booked. A form that opens on "the restaurant is closed on
+       this day" reads as broken rather than as closed — the guest is left to
+       guess which day is not, and most will not guess, they will leave.
+       Bounded because every step is one availability request, and a venue
+       shut for longer than a fortnight is a phone call, not a form. Only the
+       opening load searches: once the guest has picked a date, their date
+       stands and a closed day is answered honestly. */
+    var OPENING_SEARCH_DAYS = 14;
+
+    function loadSlots(hunt) {
+      var search = typeof hunt === 'number' ? hunt : 0;
       chosenSlot = '';
       if (!dateEl.value) {
         slotsEl.innerHTML = '<span class="klar-muted">—</span>';
@@ -1059,11 +1070,17 @@
         })
         .then(function (data) {
           var slots = data.slots || [];
+          var bookable = slots.some(function (slot) { return slot.available; });
+          if (!bookable && search > 0 && dateEl.value < dateEl.max) {
+            dateEl.value = plusDays(dateEl.value, 1);
+            loadSlots(search - 1);
+            return;
+          }
           if (slots.length === 0) {
             slotsEl.innerHTML = '<span class="klar-muted">' + esc(t.closed) + '</span>';
             return;
           }
-          if (!slots.some(function (slot) { return slot.available; })) {
+          if (!bookable) {
             slotsEl.innerHTML = '<span class="klar-muted">' + esc(t.noSlots + callUs()) + '</span>';
             return;
           }
@@ -1243,7 +1260,7 @@
       if (started) return;
       started = true;
       if (cfg.order) loadMenu();
-      if (cfg.book) loadSlots();
+      if (cfg.book) loadSlots(OPENING_SEARCH_DAYS);
     }
     mount.klarStart = start; /* so a nav link or a test can force it */
 
