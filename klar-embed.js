@@ -306,6 +306,26 @@
     'border-color:var(--klar-accent)}',
     '.klar-slots button[disabled]{opacity:.35;cursor:default;text-decoration:line-through}',
     '.klar-muted{color:var(--klar-muted);font-size:.9rem}',
+    /* Touch sizing, and only on touch. Measured at 390px before this block
+       existed: the text fields already came out 48-50px tall at a 16px font —
+       big enough to hit, and 16px is what stops iOS zooming the page on focus,
+       so neither is touched here. Two things did not measure well.
+
+       The collapsed "requests or allergies" row was 32px, well under the 44px
+       Apple asks for, because it is styled as a caption rather than a control.
+       And a time chip was exactly 44 — the floor, not a margin — while sitting
+       8px from its neighbours, where a mis-tap does not annoy the guest, it
+       books them a different hour.
+
+       `pointer: coarse` rather than a width query on purpose: it asks whether
+       the guest is using a finger, which is the actual question. A narrow
+       desktop window keeps the tighter sizes it always had. */
+    '@media (pointer:coarse){',
+    '.klar-slots button,.klar-seg button,.klar-cats button,.klar-tabs button{min-height:48px}',
+    '.klar-more summary{min-height:44px;display:flex;align-items:center}',
+    '.klar-qty button{width:44px;height:44px}',
+    '.klar-btn,.klar-add{min-height:48px}',
+    '}',
     '.klar-err{margin:12px 0 0;color:#a3341f;font-size:.9rem}',
     '.klar-note{margin:10px 0 0;font-size:.78rem;color:var(--klar-muted)}',
     '.klar-ok{text-align:center;padding:26px 0}',
@@ -984,6 +1004,33 @@
     var chosenSlot = '';
     var booking = false;
 
+    /**
+     * Take the guest to the first thing they still have to fill in.
+     *
+     * `pairs` is [missing?, element] in the order the form reads. The time row
+     * is a div of buttons rather than a field, so it is scrolled to and not
+     * focused — calling focus() on it would do nothing and, on iOS, tossing up
+     * the keyboard for a non-input is worse than leaving it alone. Wrapped
+     * because scrollIntoView options are ignored on older Safari, where the
+     * plain call is still correct.
+     */
+    function focusFirstMissing(pairs) {
+      for (var i = 0; i < pairs.length; i += 1) {
+        if (!pairs[i][0]) continue;
+        var target = pairs[i][1];
+        if (!target) return;
+        try {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (error) {
+          target.scrollIntoView();
+        }
+        if (typeof target.focus === 'function' && target.tagName !== 'DIV') {
+          target.focus({ preventScroll: true });
+        }
+        return;
+      }
+    }
+
     function showBookErr(message) {
       bookErrEl.textContent = message;
       bookErrEl.hidden = !message;
@@ -1114,6 +1161,18 @@
         var dietConsent = el('bdiet-consent').checked;
         if (!dateEl.value || !chosenSlot || !name || !phone || !email) {
           showBookErr(t.bookFields);
+          /* On a phone the error line sits just above the button, which is
+             where the thumb already is — and the field it is about can be two
+             screens up, off the fold, with nothing pointing at it. So the first
+             thing missing is scrolled to and focused. Desktop shows the whole
+             form at once and never needed this; a phone does. */
+          focusFirstMissing([
+            [!dateEl.value, dateEl],
+            [!chosenSlot, slotsEl],
+            [!name, el('bname')],
+            [!phone, el('bphone')],
+            [!email, el('bemail')]
+          ]);
           return;
         }
         /* Refused here as well as on the server. The server is what makes it
