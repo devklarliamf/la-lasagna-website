@@ -110,7 +110,7 @@
       /* One collapsed line stands in for both optional boxes below it. They stay
          two separate fields, for the Art 9 reason set out at the markup — but a
          guest who wants neither now scrolls past one row, not four. */
-      moreLabel: 'Toiveet tai allergiat (vapaaehtoinen)',
+      moreLabel: 'Lisää toiveet tai allergiat (vapaaehtoinen)',
       dietary: 'Allergiat tai erityisruokavalio',
       dietaryPlaceholder: 'Esim. pähkinäallergia, keliakia',
       /* MUST match HEALTH_CONSENT_TEXT.fi in
@@ -184,7 +184,7 @@
       email: 'Email',
       requests: 'Requests',
       requestsPlaceholder: 'Window table, a celebration…',
-      moreLabel: 'Requests or allergies (optional)',
+      moreLabel: 'Add requests or allergies (optional)',
       dietary: 'Allergies or special diet',
       dietaryPlaceholder: 'E.g. nut allergy, coeliac',
       /* MUST match HEALTH_CONSENT_TEXT.en — see the Finnish note above. */
@@ -275,14 +275,35 @@
     '.klar-pair>.klar-field{min-width:0}',
     '.klar-field input,.klar-field select,.klar-field textarea{max-width:100%}',
     /* Safari centres a date value in a box wider than the value; every other
-       field in the form starts at the left edge, so this one does too. */
-    '.klar-field input[type=date]{text-align:left}',
-    /* The collapsed row reads as one field label, not a button, so it sits in
-       the rhythm of the labels above it rather than competing with Varaa pöytä. */
+       field in the form starts at the left edge, so this one does too.
+       text-align on the input alone does not reach it: iOS draws the value in
+       ::-webkit-date-and-time-value, and without appearance:none the native box
+       keeps an intrinsic width that max-width cannot pull in — which is how the
+       field ran past the card's right edge on a phone. */
+    '.klar-field input[type=date]{-webkit-appearance:none;appearance:none;',
+    'min-width:0;text-align:left}',
+    '.klar-field input[type=date]::-webkit-date-and-time-value{text-align:left;',
+    'margin:0}',
+    /* The collapsed row used to be styled as one more field label, and read as
+       a caption nobody could tell was tappable. It gets the outline and the
+       chevron of a control now — dashed, so it still reads as secondary to
+       Varaa pöytä rather than a second primary button. */
     '.klar-more{margin:12px 0}',
     '.klar-more summary{cursor:pointer;font-size:.75rem;text-transform:uppercase;',
-    'letter-spacing:.08em;color:var(--klar-muted);padding:4px 0}',
-    '.klar-more[open] summary{margin-bottom:4px}',
+    'letter-spacing:.08em;color:var(--klar-muted);padding:11px 12px;',
+    'display:flex;align-items:center;gap:8px;min-height:44px;',
+    'border:1px dashed var(--klar-line);border-radius:var(--klar-radius);',
+    'list-style:none;-webkit-user-select:none;user-select:none}',
+    /* Safari draws its own triangle and ignores list-style. */
+    '.klar-more summary::-webkit-details-marker{display:none}',
+    '.klar-more summary::after{content:"";flex:0 0 auto;margin-left:auto;',
+    'width:7px;height:7px;border-right:1.5px solid currentColor;',
+    'border-bottom:1.5px solid currentColor;transform:rotate(45deg);',
+    'transition:transform .15s ease}',
+    '.klar-more[open] summary::after{transform:rotate(-135deg)}',
+    '.klar-more summary:hover,.klar-more summary:focus-visible{color:inherit;',
+    'border-color:var(--klar-accent)}',
+    '.klar-more[open] summary{margin-bottom:8px;color:inherit}',
     /* The Art 9 consent row: a normal-case, wrapping paragraph beside a
        checkbox, deliberately unlike the uppercase field labels above — it is
        wording to be read, not a caption to be skimmed. */
