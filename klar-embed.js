@@ -110,7 +110,7 @@
       /* One collapsed line stands in for both optional boxes below it. They stay
          two separate fields, for the Art 9 reason set out at the markup — but a
          guest who wants neither now scrolls past one row, not four. */
-      moreLabel: 'Lisää toiveet tai allergiat (vapaaehtoinen)',
+      moreLabel: 'Toiveet tai allergiat (vapaaehtoinen)',
       dietary: 'Allergiat tai erityisruokavalio',
       dietaryPlaceholder: 'Esim. pähkinäallergia, keliakia',
       /* MUST match HEALTH_CONSENT_TEXT.fi in
@@ -126,6 +126,17 @@
       dietaryConsentMissing: 'Rastita suostumus, tai tyhjennä allergiakenttä.',
       book: 'Varaa pöytä',
       booking: 'Varataan…',
+      /* The deposit a large party pays before the table is confirmed. `{eur}`
+         is per guest and `{total}` the whole party's — both filled in below,
+         never concatenated in the caller, so a translation can put them in the
+         order its own grammar needs. */
+      depositNotice:
+        'Vähintään {threshold} hengen seurueelta varausmaksu {eur} € / hlö — yhteensä {total} €. Pöytä vahvistuu maksun jälkeen.',
+      depositPay: 'Maksa varausmaksu ja varaa',
+      depositRedirect: 'Siirrytään maksuun…',
+      depositFinishing: 'Vahvistetaan varausta…',
+      depositFailed:
+        'Maksua ei voitu vahvistaa. Jos rahat lähtivät tililtäsi, ne palautetaan.',
       bookOk: 'Pöytä varattu',
       bookConfirm: 'Vahvistus lähetettiin sähköpostiisi.',
       bookAgain: 'Tee uusi varaus',
@@ -184,7 +195,7 @@
       email: 'Email',
       requests: 'Requests',
       requestsPlaceholder: 'Window table, a celebration…',
-      moreLabel: 'Add requests or allergies (optional)',
+      moreLabel: 'Requests or allergies (optional)',
       dietary: 'Allergies or special diet',
       dietaryPlaceholder: 'E.g. nut allergy, coeliac',
       /* MUST match HEALTH_CONSENT_TEXT.en — see the Finnish note above. */
@@ -196,6 +207,13 @@
       dietaryConsentMissing: 'Please tick the box, or clear the allergy field.',
       book: 'Book a table',
       booking: 'Booking…',
+      depositNotice:
+        'Parties of {threshold} or more pay a {eur} € deposit per guest — {total} € in total. The table is confirmed once it is paid.',
+      depositPay: 'Pay the deposit and book',
+      depositRedirect: 'Taking you to the payment…',
+      depositFinishing: 'Confirming your booking…',
+      depositFailed:
+        'The payment could not be confirmed. If you were charged, the money is refunded.',
       bookOk: 'Table booked',
       bookConfirm: 'A confirmation was sent to your email.',
       bookAgain: 'Make another booking',
@@ -317,6 +335,11 @@
     '.klar-field input,.klar-field select,.klar-field textarea{width:100%;padding:11px 12px;',
     'border:1px solid var(--klar-line);border-radius:var(--klar-radius);font:inherit;',
     'background:transparent;color:inherit}',
+    /* A native <select>, a date input and a text input each compute their own
+       height from platform chrome, so identical padding still drew three
+       different boxes — the date field beside the party select most visibly.
+       One line-height and one min-height make the row square. */
+    '.klar-field input,.klar-field select{line-height:1.4;min-height:46px}',
     '.klar-total{display:flex;justify-content:space-between;align-items:baseline;',
     'margin-top:14px;font-weight:700}',
     '.klar-tv{font-size:1.25rem;font-variant-numeric:tabular-nums}',
@@ -532,7 +555,8 @@
           '<div class="klar-field"><label>' + esc(t.date) + '</label>' +
           '<input type="date" data-klar="date"></div>' +
           '<div class="klar-field"><label>' + esc(t.party) + '</label>' +
-          '<select data-klar="party"></select></div></div>' +
+          '<select data-klar="party"></select>' +
+          '<p class="klar-note" data-klar="deposit-note" hidden></p></div></div>' +
           '<div class="klar-field"><label>' + esc(t.time) + '</label>' +
           '<div class="klar-slots" data-klar="slots"></div></div>' +
           '<div class="klar-field"><label>' + esc(t.name) + '</label>' +
@@ -1052,6 +1076,44 @@
       }
     }
 
+    /* The venue's deposit rule, as the availability answer last stated it:
+       { amount_per_guest_eur, threshold } or null. Never inferred here — a
+       widget that decided for itself which parties owe a deposit would be a
+       second rule to disagree with the server's. */
+    var depositRule = null;
+
+    /** What this party owes, in euros, or null. Mirrors the server's rule. */
+    function depositForParty() {
+      var size = Number(partyEl.value);
+      if (!depositRule || !size || size < depositRule.threshold) return null;
+      return {
+        perGuest: depositRule.amount_per_guest_eur,
+        total: depositRule.amount_per_guest_eur * size
+      };
+    }
+
+    /* The line under the party picker and the wording on the button, kept in
+       one place: they are two halves of the same statement, and a button that
+       says "book" under a line saying "pay first" is how a guest ends up
+       surprised on Stripe's page. */
+    function renderDeposit() {
+      var note = el('deposit-note');
+      var owed = depositForParty();
+      if (!note) return;
+      if (!owed) {
+        note.hidden = true;
+        note.textContent = '';
+        if (!booking) bookBtn.textContent = t.book;
+        return;
+      }
+      note.hidden = false;
+      note.textContent = t.depositNotice
+        .replace('{threshold}', String(depositRule.threshold))
+        .replace('{eur}', String(owed.perGuest))
+        .replace('{total}', String(owed.total));
+      if (!booking) bookBtn.textContent = t.depositPay;
+    }
+
     function showBookErr(message) {
       bookErrEl.textContent = message;
       bookErrEl.hidden = !message;
@@ -1090,6 +1152,8 @@
           return response.json();
         })
         .then(function (data) {
+          depositRule = data.deposit || null;
+          renderDeposit();
           var slots = data.slots || [];
           var bookable = slots.some(function (slot) { return slot.available; });
           if (!bookable && search > 0 && dateEl.value < dateEl.max) {
@@ -1178,7 +1242,13 @@
         });
       });
       dateEl.addEventListener('change', loadSlots);
-      partyEl.addEventListener('change', loadSlots);
+      /* The note follows the picker immediately, not on the availability answer
+         coming back a moment later — a guest who steps 7 -> 8 and reads "no
+         deposit" for a second has been told something untrue. */
+      partyEl.addEventListener('change', function () {
+        renderDeposit();
+        loadSlots();
+      });
 
       /* The tick appears only once there is an allergy to consent to, and an
          emptied field takes the tick away with it — otherwise a guest who
@@ -1221,32 +1291,113 @@
           return;
         }
         showBookErr('');
+        var payload = {
+          guest_name: name,
+          guest_phone: phone,
+          guest_email: email,
+          party_size: Number(partyEl.value),
+          date: dateEl.value,
+          time_slot: chosenSlot,
+          special_requests: requests || undefined,
+          dietary_notes: diet || undefined,
+          health_consent: diet ? dietConsent : undefined,
+          health_consent_language: cfg.locale,
+          source: 'widget'
+        };
+
+        /* A party the venue asks a deposit of never posts the booking from
+           here. It goes to Stripe first and the booking is made on the way
+           back — the server refuses this payload without a paid session, so
+           posting it anyway would only produce a 402 the guest has to read. */
+        if (depositForParty()) {
+          startDeposit(payload);
+          return;
+        }
+        submitBooking(payload);
+      });
+
+      /* Send the guest to Stripe, having first put the form they filled in
+         somewhere it survives the trip. sessionStorage, not the URL: the
+         allergy note is health data and a query string is written into
+         history, logs and anything sitting in front of the site. It is read
+         once on the way back and deleted immediately, whatever happened. */
+      function startDeposit(payload) {
         booking = true;
         bookBtn.disabled = true;
-        bookBtn.textContent = t.booking;
+        bookBtn.textContent = t.depositRedirect;
+        win
+          .fetch(cfg.api + '/api/' + encodeURIComponent(cfg.bookSlug) + '/book/deposit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              date: payload.date,
+              time_slot: payload.time_slot,
+              party_size: payload.party_size,
+              return_url: win.location.href.split('#')[0]
+            })
+          })
+          .then(readJson)
+          .then(function (result) {
+            if (!result.ok || !result.body.checkout_url) {
+              booking = false;
+              bookBtn.disabled = false;
+              renderDeposit();
+              warn('deposit session refused for "' + cfg.bookSlug + '".', result.body);
+              showBookErr(result.body.error || t.generic + callUs());
+              if (result.body.code === 'SLOT_TAKEN') loadSlots();
+              return;
+            }
+            try {
+              win.sessionStorage.setItem(
+                depositStoreKey(),
+                JSON.stringify({ payload: payload, session: result.body.session_id })
+              );
+            } catch (storageError) {
+              /* Private mode, or storage full. Nothing has been charged yet,
+                 so the honest move is to stop before it is. */
+              booking = false;
+              bookBtn.disabled = false;
+              renderDeposit();
+              warn('the booking could not be held across the payment.', storageError);
+              showBookErr(t.generic + callUs());
+              return;
+            }
+            win.location.href = result.body.checkout_url;
+          })
+          .catch(function (error) {
+            booking = false;
+            bookBtn.disabled = false;
+            renderDeposit();
+            warn('deposit request failed for "' + cfg.bookSlug + '".', error);
+            showBookErr(t.generic + callUs());
+          });
+      }
+
+      function submitBooking(payload, depositSession) {
+        booking = true;
+        bookBtn.disabled = true;
+        bookBtn.textContent = depositSession ? t.depositFinishing : t.booking;
         win
           .fetch(cfg.api + '/api/' + encodeURIComponent(cfg.bookSlug) + '/book', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              guest_name: name,
-              guest_phone: phone,
-              guest_email: email,
-              party_size: Number(partyEl.value),
-              date: dateEl.value,
-              time_slot: chosenSlot,
-              special_requests: requests || undefined,
-              dietary_notes: diet || undefined,
-              health_consent: diet ? dietConsent : undefined,
-              health_consent_language: cfg.locale,
-              source: 'widget'
-            })
+            body: JSON.stringify(
+              depositSession
+                ? Object.keys(payload).reduce(
+                    function (out, key) {
+                      out[key] = payload[key];
+                      return out;
+                    },
+                    { deposit_session: depositSession }
+                  )
+                : payload
+            )
           })
           .then(readJson)
           .then(function (result) {
             booking = false;
             bookBtn.disabled = false;
-            bookBtn.textContent = t.book;
+            renderDeposit();
             if (!result.ok) {
               warn('booking rejected for "' + cfg.bookSlug + '" (' + result.status + ').', result.body);
               /* The API returns per-field messages — show them, they are more
@@ -1263,16 +1414,70 @@
               if (result.body.code === 'SLOT_TAKEN') loadSlots();
               return;
             }
-            showBookOk(name, result.body.booking || {});
+            showBookOk(payload.guest_name, result.body.booking || {});
           })
           .catch(function (error) {
             booking = false;
             bookBtn.disabled = false;
-            bookBtn.textContent = t.book;
+            renderDeposit();
             warn('booking request failed for "' + cfg.bookSlug + '".', error);
             showBookErr(t.generic + callUs());
           });
-      });
+      }
+
+      /* Where the guest lands when Stripe is done. The session id is in the
+         query string, the form is in sessionStorage, and the booking is made
+         now — the payment on its own has bought nothing yet. The stored form
+         is deleted before the request goes out, so a reload can never post the
+         same guest twice, and the parameter is stripped from the URL so a
+         shared or bookmarked link carries no payment reference. */
+      function resumeFromDeposit() {
+        var params;
+        try {
+          params = new win.URL(win.location.href).searchParams;
+        } catch (urlError) {
+          return false;
+        }
+        var sessionId = params.get('klar_deposit');
+        if (!sessionId) return false;
+
+        var stored = null;
+        try {
+          var raw = win.sessionStorage.getItem(depositStoreKey());
+          win.sessionStorage.removeItem(depositStoreKey());
+          if (raw) stored = JSON.parse(raw);
+        } catch (storageError) {
+          warn('the held booking could not be read back.', storageError);
+        }
+
+        try {
+          var clean = new win.URL(win.location.href);
+          clean.searchParams.delete('klar_deposit');
+          win.history.replaceState({}, '', clean.toString());
+        } catch (historyError) { /* a URL the browser will not rewrite is cosmetic */ }
+
+        if (!stored || !stored.payload || stored.session !== sessionId) {
+          /* Paid, but this browser cannot say what for — a different device, a
+             cleared tab, a link forwarded to somebody else. Nothing is booked
+             and nothing is charged twice; the venue is the only one who can
+             sort it out, so the guest is pointed at them. */
+          warn('returned from a deposit payment with no held booking.', sessionId);
+          showBookErr(t.depositFailed + callUs());
+          return true;
+        }
+
+        dateEl.value = stored.payload.date;
+        partyEl.value = String(stored.payload.party_size);
+        chosenSlot = stored.payload.time_slot;
+        submitBooking(stored.payload, sessionId);
+        return true;
+      }
+
+      function depositStoreKey() {
+        return 'klar-deposit-' + cfg.bookSlug;
+      }
+
+      mount.klarResumeDeposit = resumeFromDeposit;
     }
 
     /* ---- lazy start: a visitor who never scrolls here pays for no request ---- */
@@ -1281,7 +1486,12 @@
       if (started) return;
       started = true;
       if (cfg.order) loadMenu();
-      if (cfg.book) loadSlots(OPENING_SEARCH_DAYS);
+      if (cfg.book) {
+        loadSlots(OPENING_SEARCH_DAYS);
+        /* A guest coming back from Stripe has already paid, so this runs on
+           start rather than waiting for the section to be scrolled to. */
+        if (mount.klarResumeDeposit) mount.klarResumeDeposit();
+      }
     }
     mount.klarStart = start; /* so a nav link or a test can force it */
 
