@@ -60,7 +60,7 @@ RESTAURANT = {
     "url": DOMAIN,
     "image": LOGO,
     "logo": LOGO,
-    "telephone": "+358 40 365 1664",
+    "telephone": "+358 44 983 5600",
     "email": "lalasagnahelsinki@gmail.com",
     "servesCuisine": ["Italian", "Sicilian"],
     "priceRange": "€€",

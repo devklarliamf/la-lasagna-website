@@ -1152,7 +1152,12 @@
           return response.json();
         })
         .then(function (data) {
-          depositRule = data.deposit || null;
+          /* LA LASAGNA TAKES NO DEPOSIT — operator ruling 2026-09-10. The
+             availability answer is ignored rather than read, so a
+             `deposit_stripe` rule written on the tenant row later cannot arm
+             this page unwatched. The rest of the deposit path is left in place
+             so this fork stays close to the canonical embed. */
+          depositRule = null;
           renderDeposit();
           var slots = data.slots || [];
           var bookable = slots.some(function (slot) { return slot.available; });
