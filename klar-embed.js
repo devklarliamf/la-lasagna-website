@@ -140,7 +140,15 @@
       bookOk: 'Pöytä varattu',
       bookConfirm: 'Vahvistus lähetettiin sähköpostiisi.',
       bookAgain: 'Tee uusi varaus',
-      bookFields: 'Täytä päivä, kellonaika, nimi, puhelin ja sähköposti.',
+      /* `{fields}` is the list of the ones actually left empty, built at the
+         click. The old copy named all five every time. */
+      bookFields: 'Täytä vielä {fields}.',
+      fieldDate: 'päivä',
+      fieldTime: 'kellonaika',
+      fieldName: 'nimi',
+      fieldPhone: 'puhelin',
+      fieldEmail: 'sähköposti',
+      fieldAnd: 'ja',
       at: 'klo',
       generic: 'Yhteys ei onnistunut. Yritä hetken päästä uudelleen.',
       callUs: 'Soita',
@@ -217,7 +225,13 @@
       bookOk: 'Table booked',
       bookConfirm: 'A confirmation was sent to your email.',
       bookAgain: 'Make another booking',
-      bookFields: 'Fill in the date, time, name, phone and email.',
+      bookFields: 'Still needed: {fields}.',
+      fieldDate: 'the date',
+      fieldTime: 'a time',
+      fieldName: 'your name',
+      fieldPhone: 'your phone number',
+      fieldEmail: 'your email',
+      fieldAnd: 'and',
       at: 'at',
       generic: 'The connection failed. Please try again in a moment.',
       callUs: 'Call',
@@ -1114,6 +1128,21 @@
       if (!booking) bookBtn.textContent = t.depositPay;
     }
 
+    /**
+     * The missing-field names as one sentence: "your email", "a time and your
+     * email", "the date, a time and your email".
+     *
+     * Both languages join a list the same way — commas, and the last item
+     * behind the word for "and" with no comma before it — so one function
+     * serves both and the word itself comes from the dictionary.
+     */
+    function joinFields(names) {
+      var list;
+      if (names.length <= 1) list = names[0] || '';
+      else list = names.slice(0, -1).join(', ') + ' ' + t.fieldAnd + ' ' + names[names.length - 1];
+      return t.bookFields.replace('{fields}', list);
+    }
+
     function showBookErr(message) {
       bookErrEl.textContent = message;
       bookErrEl.hidden = !message;
@@ -1242,6 +1271,7 @@
         var button = event.target.closest('button[data-klar-slot]');
         if (!button || button.disabled) return;
         chosenSlot = button.dataset.klarSlot;
+        showBookErr('');
         slotsEl.querySelectorAll('button').forEach(function (other) {
           other.classList.toggle('klar-on', other === button);
         });
@@ -1254,6 +1284,16 @@
         renderDeposit();
         loadSlots();
       });
+
+      /* A missing-fields error stops being true the moment the guest starts
+         filling one in, but it used to sit there until the next click — so the
+         line still named four fields that were already typed, next to the
+         browser's own tooltip about the one that was not. Clear it on the first
+         keystroke and let the next click say what is actually left. */
+      ['bname', 'bphone', 'bemail'].forEach(function (field) {
+        el(field).addEventListener('input', function () { showBookErr(''); });
+      });
+      dateEl.addEventListener('change', function () { showBookErr(''); });
 
       /* The tick appears only once there is an allergy to consent to, and an
          emptied field takes the tick away with it — otherwise a guest who
@@ -1273,7 +1313,18 @@
         var diet = el('bdiet').value.trim();
         var dietConsent = el('bdiet-consent').checked;
         if (!dateEl.value || !chosenSlot || !name || !phone || !email) {
-          showBookErr(t.bookFields);
+          /* Name only what is actually empty. The old line listed all five
+             fields whatever the guest had already filled in, so someone who had
+             typed everything but the email was told to fill in the date, the
+             time and their own name — and went looking for a fault in the four
+             fields that were fine. */
+          var missing = [];
+          if (!dateEl.value) missing.push(t.fieldDate);
+          if (!chosenSlot) missing.push(t.fieldTime);
+          if (!name) missing.push(t.fieldName);
+          if (!phone) missing.push(t.fieldPhone);
+          if (!email) missing.push(t.fieldEmail);
+          showBookErr(joinFields(missing));
           /* On a phone the error line sits just above the button, which is
              where the thumb already is — and the field it is about can be two
              screens up, off the fold, with nothing pointing at it. So the first
